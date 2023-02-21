@@ -5,6 +5,7 @@ output:
     orientation: columns
     vertical_layout: fill
     social: menu
+    source_code: https://github.com/anishababu62442/Teeka-Dashboard.git
     theme: spacelab
 editor_options: 
   chunk_output_type: console
