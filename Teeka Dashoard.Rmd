@@ -1,0 +1,49 @@
+---
+title: "Teeka Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    social: menu
+    theme: spacelab
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+```
+
+Experimental Design
+======================================================================
+
+Motivation {.sidebar}
+----------------------------------------------------------------------
+
+We seek to examine how similarity between memories can lead to confusion, as quantified by verbal recall.
+
+Column {.tabset}
+-----------------------------------------------------------------------
+
+### Study Phase
+
+### Vividness Phase
+
+### Recall Task
+
+Analysis
+======================================================================
+
+Overview {.sidebar}
+----------------------------------------------------------------------
+
+Using Natural Language Processing, we will consider how verbal recall changes when memories are similar. Data come from 2 conditions: competitive, where scene images from the same category were studied together, and non-competitive, where scene images were from all different categories.
+
+Column {.tabset}
+-----------------------------------------------------------------------
+
+### Number of Words Used
+
+### Compare Conditions
+
