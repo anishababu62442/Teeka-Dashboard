@@ -14,6 +14,30 @@ editor_options:
 ```{r setup, include=FALSE}
 library(flexdashboard)
 library(tidyverse)
+library(effsize)
+library(broom)
+library(reshape2)
+library(data.table)
+library(DescTools)
+library(wesanderson)
+
+```
+
+```{r get data}
+all_data <- read.csv('all_data.csv')
+
+source("runModel.R", local = knitr::knit_global())
+
+all_data <- cbind(all_data, embeddings[,1:768])
+
+numSubj = 115
+
+goodSubj = setdiff(seq(1,numSubj), as.integer(c(999)))
+badSubj = c("085", "108")
+
+# select only subjects with 100% multiple choice accuracy
+goodSubj = setdiff(goodSubj, as.integer(badSubj))
+
 ```
 
 Experimental Design
@@ -36,6 +60,23 @@ Column {.tabset}
 Analysis
 ======================================================================
 
+```{r separate conditions}
+# baseline subjects 
+baseline <- all_data %>%
+  filter(Condition == "Baseline",
+         noMemory == 'false')
+# competitive subjects 
+competitive <- all_data %>%
+  filter(Condition == "Competitive",
+         noMemory == 'false')
+
+# get average baseline vectors for each image
+averageBaselineVectors <- baseline %>%
+  group_by(Scene.File, Category) %>%
+  summarise_at(vars(`1`:`768`), mean)
+
+```
+
 Overview {.sidebar}
 ----------------------------------------------------------------------
 
@@ -46,5 +87,106 @@ Column {.tabset}
 
 ### Number of Words Used
 
+```{r count num words}
+byWords <- all_data %>%
+  filter(noMemory == 'false') %>%
+  mutate(numWords = str_count(responses, "\\w+"),
+         Condition = recode(Condition, "Baseline" = "Non-Competitive")) %>%
+  group_by(Condition, subjNum) %>%
+  summarize(numWords = mean(numWords))
+
+byWords %>% ggplot() +
+  geom_density(aes(x = numWords, fill = Condition), alpha = 0.5) + 
+  theme_minimal() +
+  scale_fill_manual(values = c("darkorange3","deepskyblue3")) +
+  theme(axis.text.x = element_text(size=20),
+        axis.text.y = element_text(size=20),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        legend.text = element_text(size=20),
+        legend.key.size = unit(1.5, 'cm'),
+        title = element_text(size=20)) +
+  scale_x_continuous(breaks = seq(10, 90, by = 10))
+
+```
+
 ### Compare Conditions
+
+```{r by subject analysis}
+# for each subject
+allSubjDF <- {}
+for (i in goodSubj){
+  # convert to 3 digit number
+  curSubject = sprintf("%03d", i)
+  # get current subject responses
+  curResponses <- all_data %>%
+    filter(subjNum == i)
+  # for each response compare to baseline of same category images
+  subjImsMeanCorVals = {}
+  for (j in seq(1,dim(curResponses)[1])){
+    # get current image response
+    curResponse <- curResponses[j,]
+    # select average baseline responses to compare
+    toCompare <- baseline %>%
+      filter(Category == curResponse$Category, # same category images
+             Scene.File != curResponse$Scene.File) # BUT not same image
+    # for each comparison, calculate correlation
+    curImCorVals <- {}
+    for (k in seq(1,dim(toCompare)[1])){
+      corVal = cor(t(subset(curResponse, select=`1`:`768`)), t(subset(toCompare[k,], select=`1`:`768`)))
+      corVal
+      curImCorVals = c(curImCorVals, corVal)
+    }
+    # zTransform mean cor vals
+    curImCorVals <- FisherZ(curImCorVals)
+    curImMeanCorVal <- mean(curImCorVals)
+    subjImsMeanCorVals = c(subjImsMeanCorVals, curImMeanCorVal)
+  }
+  # similarity value for this subject
+  meanSubjImCorVal = mean(subjImsMeanCorVals)
+  # condition type
+  conditionType = curResponses$Condition[1]
+  # subjNum
+  curSubjNum = curResponses$subjNum[1]
+  # create df
+  curImDF <- data.frame(condition = conditionType, subjNum = curSubjNum, simVal = meanSubjImCorVal)
+  # add to all subject df
+  allSubjDF <- rbind(allSubjDF, curImDF)
+}
+
+allSubjDF <- allSubjDF %>%
+  mutate(Condition = recode(condition, "Baseline" = "Non-Competitive"))
+
+```
+
+```{r plot subject analysis}
+# plot in boxplot
+allSubjDF %>% ggplot() +
+  geom_boxplot(aes(x = Condition, y = simVal, color = Condition, fill = Condition), alpha = 0.5, width=0.5) +
+  geom_point(aes(x = Condition, y = simVal, color = Condition), size = 2) +
+  theme_minimal() +
+  scale_color_manual(values = c("darkorange4","deepskyblue4")) +
+  scale_fill_manual(values = c("darkorange3","deepskyblue3")) +
+  theme(axis.text.x = element_text(size=20),
+        axis.text.y = element_text(size=20),
+        axis.title.y = element_blank(),
+        axis.title.x = element_blank(),
+        legend.title = element_text(size=20),
+        legend.text = element_text(size=20),
+        legend.key.size = unit(1.5, 'cm'))
+
+# between groups t test
+baseline_subj <- allSubjDF %>%
+  filter(condition == "Baseline")
+competitive_subj <- allSubjDF %>%
+  filter(condition == "Competitive")
+
+# t test
+tTestSimVal <- t.test(baseline_subj$simVal,competitive_subj$simVal)
+tTestSimVal
+# cohen's d for bias
+cohensDSimVal <- cohen.d(baseline_subj$simVal,competitive_subj$simVal)
+cohensDSimVal
+
+```
 

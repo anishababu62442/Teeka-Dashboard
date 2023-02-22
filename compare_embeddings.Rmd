@@ -22,9 +22,6 @@ library(wesanderson)
 all_data <- read.csv('all_data.csv')
 
 source("runModel.R", local = knitr::knit_global())
-# or sys.source("your-script.R", envir = knitr::knit_global())
-
-# all_embeddings <- read.csv('MPNET Output.csv')
 
 all_data <- cbind(all_data, embeddings[,1:768])
 
@@ -38,7 +35,7 @@ goodSubj = setdiff(goodSubj, as.integer(badSubj))
 
 ```
 
-```{r separate conditions - START HERE}
+```{r separate conditions}
 # baseline subjects 
 baseline <- all_data %>%
   filter(Condition == "Baseline",
