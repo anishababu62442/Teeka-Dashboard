@@ -20,6 +20,10 @@ library(reshape2)
 library(data.table)
 library(DescTools)
 library(wesanderson)
+library(magick)
+
+# create gifs from images
+source("createGifs.R", local = knitr::knit_global())
 
 ```
 
@@ -53,9 +57,25 @@ Column {.tabset}
 
 ### Study Phase
 
+```{r study}
+knitr::include_graphics("study.gif")
+
+```
+
 ### Vividness Phase
 
+```{r vividness}
+knitr::include_graphics("vivid.gif")
+
+```
+
 ### Recall Task
+
+
+```{r recall}
+knitr::include_graphics("recall.gif")
+
+```
 
 Analysis
 ======================================================================
@@ -99,13 +119,6 @@ byWords %>% ggplot() +
   geom_density(aes(x = numWords, fill = Condition), alpha = 0.5) + 
   theme_minimal() +
   scale_fill_manual(values = c("darkorange3","deepskyblue3")) +
-  theme(axis.text.x = element_text(size=20),
-        axis.text.y = element_text(size=20),
-        axis.title.y = element_blank(),
-        axis.title.x = element_blank(),
-        legend.text = element_text(size=20),
-        legend.key.size = unit(1.5, 'cm'),
-        title = element_text(size=20)) +
   scale_x_continuous(breaks = seq(10, 90, by = 10))
 
 ```
@@ -166,14 +179,7 @@ allSubjDF %>% ggplot() +
   geom_point(aes(x = Condition, y = simVal, color = Condition), size = 2) +
   theme_minimal() +
   scale_color_manual(values = c("darkorange4","deepskyblue4")) +
-  scale_fill_manual(values = c("darkorange3","deepskyblue3")) +
-  theme(axis.text.x = element_text(size=20),
-        axis.text.y = element_text(size=20),
-        axis.title.y = element_blank(),
-        axis.title.x = element_blank(),
-        legend.title = element_text(size=20),
-        legend.text = element_text(size=20),
-        legend.key.size = unit(1.5, 'cm'))
+  scale_fill_manual(values = c("darkorange3","deepskyblue3")) 
 
 # between groups t test
 baseline_subj <- allSubjDF %>%
